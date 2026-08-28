@@ -24,6 +24,7 @@ import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -451,6 +452,17 @@ open class MPVActivity : AppCompatActivity() {
     internal var cachedChapters: List<MPVView.Chapter> = emptyList()
     internal var pendingChapterSeekTime: Double? = null
     internal val clearPendingChapterSeek = Runnable { pendingChapterSeekTime = null }
+    internal var unsupportedShieldContinueAction: (() -> Unit)? = null
+    internal var bypassUnsupportedShieldCheckForNextLoad = false
+    internal var shieldCompatibilityCheckRequested = false
+    internal var shieldCompatibilityCheckPending = false
+    internal var shieldCompatibilityResumeAfterCheck = false
+    internal val shieldCompatibilityCheckTimeout = Runnable {
+        if (shieldCompatibilityCheckPending) {
+            android.util.Log.w(MPV_ACTIVITY_TAG, "Shield compatibility check timed out; allowing playback")
+            completeLoadedShieldCompatibilityCheck()
+        }
+    }
 
     // Activity lifetime
 
@@ -497,7 +509,11 @@ open class MPVActivity : AppCompatActivity() {
             finishWithResult(RESULT_CANCELED)
             return
         }
-        startPlayerForFile(filepath)
+        if (!showUnsupportedShieldVideoWarningIfNeeded(filepath) {
+                startPlayerForFile(filepath)
+            }) {
+            startPlayerForFile(filepath)
+        }
     }
 
 
@@ -533,6 +549,15 @@ open class MPVActivity : AppCompatActivity() {
         if (filepath == null) {
             return
         }
+        if (showUnsupportedShieldVideoWarningIfNeeded(filepath) {
+                loadFileFromNewIntent(intent, filepath)
+            }) {
+            return
+        }
+        loadFileFromNewIntent(intent, filepath)
+    }
+
+    private fun loadFileFromNewIntent(intent: Intent, filepath: String) {
         resetPlaybackResultState()
         val nextResumeSource = resumeSourceFromIntent(intent, filepath)
         val willReplaceCurrentFile = activityIsForeground || !didResumeBackgroundPlayback || this.newIntentReplace
@@ -550,6 +575,7 @@ open class MPVActivity : AppCompatActivity() {
             prepareStreamLoading(filepath)
             if (this.newIntentReplace) {
                 prepareDecoderForFileLoad(filepath)
+                prepareLoadedShieldCompatibilityCheck(filepath)
                 suppressEndFileFinishForReplace = true
                 mpvCommand(arrayOf("loadfile", filepath, "replace"))
                 showToast(getString(R.string.notice_file_play))
@@ -564,6 +590,7 @@ open class MPVActivity : AppCompatActivity() {
             applySavedDelayDefaults()
             prepareStreamLoading(filepath)
             prepareDecoderForFileLoad(filepath)
+            prepareLoadedShieldCompatibilityCheck(filepath)
             suppressEndFileFinishForReplace = true
             mpvCommand(arrayOf("loadfile", filepath))
         }
@@ -631,6 +658,12 @@ open class MPVActivity : AppCompatActivity() {
         applyPlayerScreenBrightnessPreference()
 
         activityIsForeground = true
+        if (shieldCompatibilityCheckPending) {
+            eventUiHandler.postDelayed(
+                shieldCompatibilityCheckTimeout,
+                SHIELD_COMPATIBILITY_CHECK_TIMEOUT_MS,
+            )
+        }
         scheduleScreensaver()
         stopServiceHandler.removeCallbacks(stopServiceRunnable)
         stopServiceHandler.postDelayed(stopServiceRunnable, BACKGROUND_SERVICE_STOP_DELAY_MS)
@@ -665,15 +698,19 @@ open class MPVActivity : AppCompatActivity() {
         // The screensaver eats the first key (just wakes); other keys reset its idle timer.
         if (consumeScreensaverKey(ev)) return true
         noteScreensaverActivity()
-        val handled = when {
-            // Skip button (when shown) gets first crack: OK skips, other keys dismiss it.
-            handleSkipButtonKey(ev) -> true
-            // Built-in handlers first; forward the rest to libmpv.
-            else -> interceptDpad(ev) ||
-                interceptRemoteNextChapterButton(ev) ||
-                (ev.action == KeyEvent.ACTION_DOWN && interceptKeyDown(ev)) ||
-                player.onKey(ev) ||
-                super.dispatchKeyEvent(ev)
+        val handled = if (binding.unsupportedShieldVideoOverlay.isVisible) {
+            super.dispatchKeyEvent(ev)
+        } else {
+            when {
+                // Skip button (when shown) gets first crack: OK skips, other keys dismiss it.
+                handleSkipButtonKey(ev) -> true
+                // Built-in handlers first; forward the rest to libmpv.
+                else -> interceptDpad(ev) ||
+                    interceptRemoteNextChapterButton(ev) ||
+                    (ev.action == KeyEvent.ACTION_DOWN && interceptKeyDown(ev)) ||
+                    player.onKey(ev) ||
+                    super.dispatchKeyEvent(ev)
+            }
         }
         return handled
     }

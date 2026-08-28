@@ -937,4 +937,10 @@
     <string name="settings_category_diagnostics">Playback diagnostics</string>
     <string name="settings_category_system_behavior">Android behavior</string>
     <string name="document_picker_choose_app">Choose file manager</string>
+    <string name="shield_unsupported_video_title">Unsupported on NVIDIA Shield</string>
+    <string name="shield_unsupported_video_format">HEVC %1$d bit %2$s cannot be hardware decoded.</string>
+    <string name="shield_unsupported_video_recommendation">Choose an HEVC Main10 4:2:0 release for reliable playback.</string>
+    <string name="shield_unsupported_video_danger">Continuing will use software decoding. Your Shield will most likely lock up or freeze, and you may need to unplug its power cable to recover.</string>
+    <string name="shield_unsupported_video_back">Back</string>
+    <string name="shield_unsupported_video_continue">Continue anyway</string>
 </resources>

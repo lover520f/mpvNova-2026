@@ -75,6 +75,10 @@ internal fun MPVActivity.prepareStreamLoading(path: String?) {
 }
 
 internal fun MPVActivity.refreshLoadingOverlay() {
+    if (unsupportedShieldContinueAction != null) {
+        hideStreamLoadingOverlayImmediately()
+        return
+    }
     val visible = streamOpenLoading || streamCacheLoading
     binding.loadingText.setText(
         if (streamCacheLoading) R.string.player_buffering_stream
@@ -99,6 +103,15 @@ internal fun MPVActivity.refreshLoadingOverlay() {
             .withLayer()
             .withEndAction { binding.loadingOverlay.visibility = View.GONE }
     }
+}
+
+internal fun MPVActivity.hideStreamLoadingOverlayImmediately() {
+    binding.loadingOverlay.animate().cancel()
+    binding.loadingOverlay.alpha = 0f
+    binding.loadingOverlay.visibility = View.GONE
+    binding.streamLoadingCover.animate().cancel()
+    binding.streamLoadingCover.alpha = 0f
+    binding.streamLoadingCover.visibility = View.GONE
 }
 
 // Opaque backdrop tied to the initial network-stream open (streamOpenLoading), so the

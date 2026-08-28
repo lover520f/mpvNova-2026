@@ -62,6 +62,7 @@ internal fun MPVActivity.startPlayerForFile(filepath: String) {
     applySavedDelayDefaults()
     prepareStreamLoading(filepath)
     prepareDecoderForFileLoad(filepath)
+    prepareLoadedShieldCompatibilityCheck(filepath)
     player.playFile(filepath)
     mediaSession = initMediaSession()
     updateMediaSessionNow()

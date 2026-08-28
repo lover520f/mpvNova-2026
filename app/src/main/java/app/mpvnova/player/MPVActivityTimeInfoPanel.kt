@@ -3,7 +3,14 @@ package app.mpvnova.player
 import android.view.View
 
 internal fun MPVActivity.shouldShowClockWhileControlsHidden(): Boolean {
-    return !isStatsOverlayVisible() && showClockOnPause && psc.pause
+    return !isStatsOverlayVisible() &&
+        !streamOpenLoading &&
+        !streamCacheLoading &&
+        !shieldCompatibilityCheckRequested &&
+        !shieldCompatibilityCheckPending &&
+        unsupportedShieldContinueAction == null &&
+        showClockOnPause &&
+        psc.pause
 }
 
 internal fun MPVActivity.refreshTimeInfoPanelVisibility() {

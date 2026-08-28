@@ -133,7 +133,7 @@ private fun String.primaryVideoOutput(): String {
         .trim()
 }
 
-private fun selectedVideoTrackString(name: String): String {
+internal fun selectedVideoTrackString(name: String): String {
     val count = mpvGetPropertyInt("track-list/count") ?: 0
     val selectedTrack = (0 until count).firstOrNull { index ->
         mpvGetPropertyString("track-list/$index/type") == "video" &&

@@ -23,6 +23,8 @@ internal fun MPVActivity.bindClickListeners() = with(binding) {
     topPiPBtn.setOnClickListener { goIntoPiP() }
     topMenuBtn.setOnClickListener { openPlayerDrawer() }
     playbackDurationTxt.setOnClickListener { toggleTimeRemainingDisplay() }
+    unsupportedShieldBackBtn.setOnClickListener { exitUnsupportedShieldWarning() }
+    unsupportedShieldContinueBtn.setOnClickListener { continueUnsupportedShieldPlayback() }
     bindSkipButton()
 }
 

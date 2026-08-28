@@ -12,6 +12,7 @@ internal fun MPVActivity.handleMpvEvent(eventId: Int) {
         )
         MpvEvent.MPV_EVENT_START_FILE -> handleMpvStartFile()
         MpvEvent.MPV_EVENT_FILE_LOADED -> handleMpvFileLoaded()
+        MpvEvent.MPV_EVENT_VIDEO_RECONFIG -> handleLoadedShieldVideoReconfig()
         MpvEvent.MPV_EVENT_PLAYBACK_RESTART -> handleMpvPlaybackRestart()
     }
     if (eventId in STREAM_LOADING_DONE_EVENTS)
@@ -64,6 +65,7 @@ private fun MPVActivity.handleMpvStartFile() {
     gpuNextCopyRetryDisplayedFrame = false
     pendingShieldFallbackResync = false
     shieldFallbackResumeAfter = false
+    beginLoadedShieldCompatibilityCheck()
     audioFiltersAwaitingPostLoadReconcile = true
     controlsOverlayAutoPaused = false
     resetPlaybackSeekState()
@@ -104,6 +106,7 @@ private fun MPVActivity.handleMpvFileLoaded() {
     showResumeToastIfNeeded()
     refreshAudioFiltersAfterFileLoad()
     applyCustomSubtitleStyleOnFileLoad()
+    finishLoadedShieldCompatibilityCheckForNonHevc()
 }
 
 private fun MPVActivity.guardNearEndStartPosition() {
